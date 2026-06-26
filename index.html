@@ -5,19 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Map</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <!-- Leaflet JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <!-- PapaParse for CSV parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -31,411 +23,202 @@
     header {
       background: #16213e;
       border-bottom: 2px solid #0f3460;
-      padding: 12px 20px;
+      padding: 10px 18px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       flex-shrink: 0;
-    }
-
-    header h1 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #e0e0e0;
-      letter-spacing: 0.02em;
-    }
-
-    #status {
-      font-size: 0.8rem;
-      color: #7c8db5;
-      margin-left: auto;
-    }
-
-    #status.error {
-      color: #e06c75;
-    }
-
-    #status.loaded {
-      color: #98c379;
-    }
-
-    #legend {
-      display: flex;
-      gap: 12px;
       flex-wrap: wrap;
-      align-items: center;
     }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.75rem;
-      color: #a0aec0;
-    }
+    header h1 { font-size: 1rem; font-weight: 600; color: #e0e0e0; }
 
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.3);
-      flex-shrink: 0;
-    }
+    #status { font-size: 0.78rem; color: #7c8db5; margin-left: auto; }
+    #status.error  { color: #e06c75; }
+    #status.loaded { color: #98c379; }
 
-    #map {
-      flex: 1;
-    }
+    #legend { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.73rem; color: #a0aec0; }
+    .legend-dot  { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); flex-shrink: 0; }
 
-    /* Popup styling */
+    #map { flex: 1; }
+
     .leaflet-popup-content-wrapper {
-      background: #16213e;
-      color: #e0e0e0;
-      border: 1px solid #0f3460;
-      border-radius: 8px;
+      background: #16213e; color: #e0e0e0;
+      border: 1px solid #0f3460; border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
+    .leaflet-popup-tip { background: #16213e; }
+    .leaflet-popup-content { margin: 12px 16px; min-width: 180px; }
 
-    .leaflet-popup-tip {
-      background: #16213e;
-    }
-
-    .leaflet-popup-content {
-      margin: 12px 16px;
-      min-width: 180px;
-    }
-
-    .popup-name {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #e0e0e0;
-      margin-bottom: 6px;
-    }
-
-    .popup-address {
-      font-size: 0.8rem;
-      color: #7c8db5;
-      margin-bottom: 6px;
-      line-height: 1.4;
-    }
-
-    .popup-description {
-      font-size: 0.82rem;
-      color: #a0aec0;
-      line-height: 1.5;
-      border-top: 1px solid #0f3460;
-      padding-top: 6px;
-      margin-top: 4px;
-    }
-
-    .popup-category {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 99px;
-      margin-bottom: 8px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    /* Config panel */
-    #config-panel {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    #config-box {
-      background: #16213e;
-      border: 1px solid #0f3460;
-      border-radius: 12px;
-      padding: 32px;
-      width: 90%;
-      max-width: 520px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-    }
-
-    #config-box h2 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: #e0e0e0;
-    }
-
-    #config-box p {
-      font-size: 0.82rem;
-      color: #7c8db5;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #a0aec0;
-      margin-bottom: 5px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 10px 12px;
-      background: #1a1a2e;
-      border: 1px solid #0f3460;
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-size: 0.88rem;
-      margin-bottom: 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="text"]:focus {
-      border-color: #4a9eff;
-    }
-
-    #config-box button {
-      width: 100%;
-      padding: 11px;
-      background: #4a9eff;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    #config-box button:hover {
-      background: #2d7dd2;
-    }
-
-    .hint {
-      font-size: 0.73rem;
-      color: #4a6080;
-      margin-top: -12px;
-      margin-bottom: 16px;
+    .popup-name        { font-weight: 700; font-size: 0.92rem; color: #e0e0e0; margin-bottom: 5px; }
+    .popup-address     { font-size: 0.78rem; color: #7c8db5; margin-bottom: 5px; line-height: 1.4; }
+    .popup-description { font-size: 0.8rem; color: #a0aec0; line-height: 1.5; border-top: 1px solid #0f3460; padding-top: 6px; margin-top: 4px; }
+    .popup-category    {
+      display: inline-block; font-size: 0.68rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px; margin-bottom: 7px;
+      letter-spacing: 0.05em; text-transform: uppercase;
     }
 
     #reload-btn {
-      background: none;
-      border: 1px solid #0f3460;
-      color: #7c8db5;
-      padding: 5px 12px;
-      border-radius: 5px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: none; border: 1px solid #0f3460; color: #7c8db5;
+      padding: 4px 11px; border-radius: 5px; font-size: 0.73rem;
+      cursor: pointer; transition: all 0.2s;
     }
-
-    #reload-btn:hover {
-      border-color: #4a9eff;
-      color: #4a9eff;
-    }
+    #reload-btn:hover { border-color: #4a9eff; color: #4a9eff; }
   </style>
 </head>
 <body>
 
-  <!-- Config Panel (shown on first load) -->
-  <div id="config-panel">
-    <div id="config-box">
-      <h2>Connect your Google Sheet</h2>
-      <p>Paste your Google Sheet ID below. Your sheet must be set to <strong>"Anyone with the link can view"</strong>. Column headers should be: <strong>Name, Address, Lat, Long, Description, Category</strong> (case-sensitive).</p>
+<header>
+  <h1>📍 My Map</h1>
+  <div id="legend"></div>
+  <span id="status">Loading…</span>
+  <button id="reload-btn" onclick="loadSheet()">↻ Refresh</button>
+</header>
 
-      <label for="sheet-id">Google Sheet ID</label>
-      <input type="text" id="sheet-id" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
-      <p class="hint">Found in your sheet URL: docs.google.com/spreadsheets/d/<strong>[SHEET ID]</strong>/edit</p>
+<div id="map"></div>
 
-      <label for="sheet-name">Sheet Tab Name</label>
-      <input type="text" id="sheet-name" placeholder="Sheet1" />
-      <p class="hint">The name of the tab at the bottom of your spreadsheet.</p>
+<script>
+  // ── CONFIG — update these two values ─────────────────────────────────────
+  const SHEET_ID = '10FYl3FarJYFjSPyfH5MuPt1pWQP1T_c8IZzCus8QFUg';
+  const SHEET_GID = '2033436901';   // the gid from your URL after #gid=
+  // ─────────────────────────────────────────────────────────────────────────
 
-      <button onclick="loadFromConfig()">Load Map</button>
-    </div>
-  </div>
+  const PALETTE = [
+    '#4a9eff','#e06c75','#98c379','#e5c07b',
+    '#c678dd','#56b6c2','#d19a66','#ff6b6b','#a8ff78','#61afef'
+  ];
+  const categoryColors = {};
+  let colorIndex = 0;
 
-  <header>
-    <h1>📍 My Map</h1>
-    <div id="legend"></div>
-    <span id="status">Waiting for data…</span>
-    <button id="reload-btn" onclick="showConfig()" title="Change sheet">⚙ Change Sheet</button>
-  </header>
+  function colorFor(cat) {
+    const key = (cat || 'Uncategorised').trim();
+    if (!categoryColors[key]) {
+      categoryColors[key] = PALETTE[colorIndex % PALETTE.length];
+      colorIndex++;
+    }
+    return categoryColors[key];
+  }
 
-  <div id="map"></div>
+  function makeIcon(color) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+      <circle cx="11" cy="11" r="8" fill="${color}" stroke="white" stroke-width="2.5" opacity="0.92"/>
+    </svg>`;
+    return L.divIcon({ html: svg, className: '', iconSize: [22,22], iconAnchor: [11,11], popupAnchor: [0,-13] });
+  }
 
-  <script>
-    // ─── Colour palette for categories ───────────────────────────────────────
-    const PALETTE = [
-      '#4a9eff', '#e06c75', '#98c379', '#e5c07b',
-      '#c678dd', '#56b6c2', '#d19a66', '#61afef',
-      '#ff6b6b', '#a8ff78'
-    ];
+  const map = L.map('map').setView([39.5, -98.35], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+  const markerLayer = L.layerGroup().addTo(map);
 
-    const categoryColors = {};
-    let colorIndex = 0;
+  function get(row, ...keys) {
+    for (const k of keys) {
+      if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k];
+    }
+    return '';
+  }
 
-    function colorFor(category) {
-      const key = (category || 'Uncategorised').trim();
-      if (!categoryColors[key]) {
-        categoryColors[key] = PALETTE[colorIndex % PALETTE.length];
-        colorIndex++;
+  function loadSheet() {
+    const status = document.getElementById('status');
+    status.textContent = 'Loading…';
+    status.className = '';
+
+    // Use the gviz JSON endpoint — works cross-origin on public sheets
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
+
+    const script = document.createElement('script');
+    window._mapCallback = function(data) {
+      document.head.removeChild(script);
+      try {
+        parseGviz(data);
+      } catch(e) {
+        status.textContent = 'Error parsing sheet data: ' + e.message;
+        status.className = 'error';
       }
-      return categoryColors[key];
+    };
+
+    // gviz supports JSONP via the tqx=out:json&responseHandler param
+    const jsonpUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:_mapCallback&gid=${SHEET_GID}`;
+    script.src = jsonpUrl;
+    script.onerror = () => {
+      status.textContent = 'Could not reach Google Sheets. Check the sheet is public.';
+      status.className = 'error';
+    };
+    document.head.appendChild(script);
+  }
+
+  function parseGviz(data) {
+    const status = document.getElementById('status');
+    const cols = data.table.cols.map(c => c.label);
+
+    if (cols.length === 0 || !data.table.rows || data.table.rows.length === 0) {
+      status.textContent = 'Sheet appears empty.';
+      status.className = 'error';
+      return;
     }
 
-    // ─── Create a circular SVG marker ────────────────────────────────────────
-    function makeIcon(color) {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
-        <circle cx="11" cy="11" r="8" fill="${color}" stroke="white" stroke-width="2.5" opacity="0.92"/>
-      </svg>`;
-      return L.divIcon({
-        html: svg,
-        className: '',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-        popupAnchor: [0, -13]
+    // Build rows as objects keyed by column label
+    const rows = data.table.rows.map(r => {
+      const obj = {};
+      cols.forEach((label, i) => {
+        obj[label] = r.c[i] ? (r.c[i].v !== null ? String(r.c[i].v) : '') : '';
       });
-    }
-
-    // ─── Map setup ────────────────────────────────────────────────────────────
-    const map = L.map('map').setView([39.5, -98.35], 4);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
-    }).addTo(map);
-
-    let markerLayer = L.layerGroup().addTo(map);
-
-    // ─── Config panel helpers ─────────────────────────────────────────────────
-    function showConfig() {
-      document.getElementById('config-panel').style.display = 'flex';
-    }
-
-    function hideConfig() {
-      document.getElementById('config-panel').style.display = 'none';
-    }
-
-    function loadFromConfig() {
-      const sheetId = document.getElementById('sheet-id').value.trim();
-      const sheetName = document.getElementById('sheet-name').value.trim() || 'Sheet1';
-
-      if (!sheetId) {
-        alert('Please enter a Google Sheet ID.');
-        return;
-      }
-
-      // Save to localStorage so it persists on reload
-      localStorage.setItem('mapSheetId', sheetId);
-      localStorage.setItem('mapSheetName', sheetName);
-
-      hideConfig();
-      loadSheet(sheetId, sheetName);
-    }
-
-    // ─── Load & parse Google Sheet as CSV ────────────────────────────────────
-    function loadSheet(sheetId, sheetName) {
-      const status = document.getElementById('status');
-      status.textContent = 'Loading…';
-      status.className = '';
-
-      const encodedName = encodeURIComponent(sheetName);
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodedName}`;
-
-      Papa.parse(url, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          if (!results.data || results.data.length === 0) {
-            status.textContent = 'No data found. Check your Sheet ID and tab name.';
-            status.className = 'error';
-            return;
-          }
-          plotMarkers(results.data);
-        },
-        error: function(err) {
-          status.textContent = 'Failed to load sheet. Make sure it\'s set to "Anyone can view".';
-          status.className = 'error';
-          console.error(err);
-        }
-      });
-    }
-
-    // ─── Plot markers ─────────────────────────────────────────────────────────
-    function plotMarkers(rows) {
-      markerLayer.clearLayers();
-      Object.keys(categoryColors).forEach(k => delete categoryColors[k]);
-      colorIndex = 0;
-
-      let count = 0;
-      const bounds = [];
-
-      rows.forEach(row => {
-        const lat = parseFloat(row['Lat'] || row['lat'] || row['LAT'] || row['latitude'] || row['Latitude']);
-        const lng = parseFloat(row['Long'] || row['long'] || row['LONG'] || row['longitude'] || row['Longitude'] || row['Lng'] || row['lng']);
-
-        if (isNaN(lat) || isNaN(lng)) return;
-
-        const name        = row['Name']        || row['name']        || '';
-        const address     = row['Address']     || row['address']     || '';
-        const description = row['Description'] || row['description'] || '';
-        const category    = row['Category']    || row['category']    || 'Uncategorised';
-
-        const color = colorFor(category);
-        const marker = L.marker([lat, lng], { icon: makeIcon(color) });
-
-        const popupHTML = `
-          <div class="popup-name">${name}</div>
-          <span class="popup-category" style="background:${color}22;color:${color};border:1px solid ${color}55">${category}</span>
-          ${address    ? `<div class="popup-address">📍 ${address}</div>` : ''}
-          ${description ? `<div class="popup-description">${description}</div>` : ''}
-        `;
-
-        marker.bindPopup(popupHTML);
-        markerLayer.addLayer(marker);
-        bounds.push([lat, lng]);
-        count++;
-      });
-
-      // Update legend
-      const legend = document.getElementById('legend');
-      legend.innerHTML = Object.entries(categoryColors).map(([cat, col]) =>
-        `<div class="legend-item">
-          <div class="legend-dot" style="background:${col}"></div>
-          <span>${cat}</span>
-        </div>`
-      ).join('');
-
-      // Fit map to markers
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [40, 40] });
-      }
-
-      const status = document.getElementById('status');
-      status.textContent = `${count} location${count !== 1 ? 's' : ''} loaded`;
-      status.className = 'loaded';
-    }
-
-    // ─── On page load, restore saved config ───────────────────────────────────
-    window.addEventListener('load', () => {
-      const savedId   = localStorage.getItem('mapSheetId');
-      const savedName = localStorage.getItem('mapSheetName');
-
-      if (savedId) {
-        document.getElementById('sheet-id').value   = savedId;
-        document.getElementById('sheet-name').value = savedName || 'Sheet1';
-        hideConfig();
-        loadSheet(savedId, savedName || 'Sheet1');
-      }
+      return obj;
     });
-  </script>
+
+    markerLayer.clearLayers();
+    Object.keys(categoryColors).forEach(k => delete categoryColors[k]);
+    colorIndex = 0;
+
+    let count = 0;
+    const bounds = [];
+
+    rows.forEach(row => {
+      const lat = parseFloat(get(row, 'Lat','lat','LAT','Latitude','latitude'));
+      const lng = parseFloat(get(row, 'Long','long','LONG','Lng','lng','Longitude','longitude'));
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const name        = get(row, 'Name','name','NAME');
+      const address     = get(row, 'Address','address','ADDRESS');
+      const description = get(row, 'Description','description','DESCRIPTION');
+      const category    = get(row, 'Category','category','CATEGORY') || 'Uncategorised';
+
+      const color = colorFor(category);
+      const marker = L.marker([lat, lng], { icon: makeIcon(color) });
+
+      marker.bindPopup(`
+        <div class="popup-name">${name}</div>
+        <span class="popup-category" style="background:${color}22;color:${color};border:1px solid ${color}55">${category}</span>
+        ${address     ? `<div class="popup-address">📍 ${address}</div>` : ''}
+        ${description ? `<div class="popup-description">${description}</div>` : ''}
+      `);
+
+      markerLayer.addLayer(marker);
+      bounds.push([lat, lng]);
+      count++;
+    });
+
+    // Rebuild legend
+    const legend = document.getElementById('legend');
+    legend.innerHTML = Object.entries(categoryColors).map(([cat, col]) =>
+      `<div class="legend-item">
+        <div class="legend-dot" style="background:${col}"></div>
+        <span>${cat}</span>
+      </div>`
+    ).join('');
+
+    if (bounds.length > 0) map.fitBounds(bounds, { padding: [40, 40] });
+
+    status.textContent = `${count} location${count !== 1 ? 's' : ''} loaded`;
+    status.className = 'loaded';
+  }
+
+  // Load on startup
+  loadSheet();
+</script>
 </body>
 </html>
